@@ -16,7 +16,7 @@ services:
         ports:
             - "9001:9001"
         volumes:
-            - ./symfony3:/var/www/symfony3:cached
+            - ./symfony3:/var/www/symfony3
             - ./logs/symfony:/var/www/symfony3/var/logs:cached
         links:
             - db
