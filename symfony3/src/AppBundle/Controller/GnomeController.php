@@ -85,11 +85,11 @@ class GnomeController extends FOSRestController
 
             return new View("Gnome created successfully", Response::HTTP_CREATED);
         } catch (\Exception $e) {
-
+            
             return new View("Internal server error", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-    
+
     /**
      * Read Gnome action 
      *
@@ -98,7 +98,8 @@ class GnomeController extends FOSRestController
      * @param int $id
      * @return mixed
      */
-    public function getAction(int $id) {
+    public function getAction(int $id) 
+    {
 
         $result = $this->getDoctrine()->getRepository('AppBundle:Gnome')->find($id);
 
@@ -106,15 +107,72 @@ class GnomeController extends FOSRestController
 
             return new View("Gnome not found", Response::HTTP_NOT_FOUND);
         }
-        
+
         // convert Avatar data to base64 string
         $avatar = $result->getAvatar();
-        if(is_resource($avatar)){
+        if (is_resource($avatar)) {
             $result->setAvatar(base64_encode(stream_get_contents($avatar)));
         }
-        
+
         return $result;
     }
 
-}
+    /**
+     * Update Gnome action
+     * 
+     * @Rest\Put("/api/gnome/{id}", requirements={"id"="\d+"})
+     * @Rest\RequestParam(name="name", requirements="[a-zA-Z0-9 -]+", description="Gnome name")
+     * @Rest\RequestParam(name="strength", requirements="^[1-9][0-9]?$|^100$", description="Gnome strength")
+     * @Rest\RequestParam(name="age", requirements="^[1-9][0-9]?$|^100$", description="Gnome age")
+     * @Rest\RequestParam(name="avatar", description="File: image/png")
+     * @Rest\FileParam(name="avatar", requirements={"mimeTypes"="image/png"}, image=true)
+     *
+     * @param int $id
+     * @param ParamFetcher $paramFetcher
+     * @return mixed
+     * 
+     * WARNING: php7-fileinfo required for avatar validation !
+     */
+    public function putAction(int $id, ParamFetcher $paramFetcher) 
+    {
+        
+        $name = $paramFetcher->get('name');
+        $strength = $paramFetcher->get('strength');
+        $age = $paramFetcher->get('age');
+        $avatar = $paramFetcher->get('avatar');
 
+        try {
+
+            $manager = $this->getDoctrine()->getManager();
+            $gnome = $this->getDoctrine()->getRepository('AppBundle:Gnome')->find($id);
+
+            if (empty($gnome)) {
+
+                return new View("Gnome not found", Response::HTTP_NOT_FOUND);
+            } else {
+
+                if (!empty($name)) {
+                    $gnome->setName($name);
+                }
+                if (!empty($strength)) {
+                    $gnome->setStrength($strength);
+                }
+                if (!empty($age)) {
+                    $gnome->setAge($age);
+                }
+                if ($avatar instanceof UploadedFile) {
+                    $avatarRaw = $this->uploadedFileToRawConvert($avatar);
+                    $gnome->setAvatar($avatarRaw);
+                }
+
+                $manager->flush();
+
+                return new View("Gnome updated successfully", Response::HTTP_OK);
+            }
+        } catch (\Exception $e) {
+
+            return new View("Internal server error", Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+}
