@@ -11,18 +11,28 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use AppBundle\Entity\Gnome;
 
+use Nelmio\ApiDocBundle\Annotation\Model;
+use Swagger\Annotations as SWG;
+
 class GnomeController extends FOSRestController 
 {
 
     /**
+     * API Test
+     * 
      * @Rest\Get("/api/test")    
+     * 
+     * @SWG\Response(
+     *     response=200,
+     *     description="TEST OK",
+     * )
      * 
      * @return mixed
      */
     public function testAction() 
     {
 
-        return new View("OK", Response::HTTP_OK);
+        return new View("TEST OK", Response::HTTP_OK);
     }
 
     /**
@@ -54,9 +64,19 @@ class GnomeController extends FOSRestController
      * @Rest\RequestParam(name="age", requirements="^[1-9][0-9]?$|^100$", strict=true, description="Gnome age")
      * @Rest\RequestParam(name="avatar", description="File: image/png")
      * @Rest\FileParam(name="avatar", requirements={"mimeTypes"="image/png"}, image=true)
+     * NOTICE: remove line with FileParam for test API without upload file
      *
      * @param ParamFetcher $paramFetcher
      * @return mixed
+     * 
+     * @SWG\Response(
+     *     response=200,
+     *     description="Gnome created successfully",
+     * )
+     * @SWG\Response(
+     *     response=500,
+     *     description="Internal server error",
+     * )
      * 
      * WARNING: php7-fileinfo required for avatar validation !
      */
@@ -82,8 +102,9 @@ class GnomeController extends FOSRestController
             $manager = $this->getDoctrine()->getManager();
             $manager->persist($data);
             $manager->flush();
+            
+            return $data;
 
-            return new View("Gnome created successfully", Response::HTTP_CREATED);
         } catch (\Exception $e) {
             
             return new View("Internal server error", Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -95,26 +116,45 @@ class GnomeController extends FOSRestController
      *
      * @Rest\Get("/api/gnome/{id}", requirements={"id"="\d+"})    
      * 
+     * @SWG\Response(
+     *     response=200,
+     *     description="JSON Result",
+     * )
+     * @SWG\Response(
+     *     response=404,
+     *     description="Gnome not found",
+     * )
+     * @SWG\Response(
+     *     response=500,
+     *     description="Internal server error",
+     * )
+     * 
      * @param int $id
      * @return mixed
      */
     public function getAction(int $id) 
     {
 
-        $result = $this->getDoctrine()->getRepository('AppBundle:Gnome')->find($id);
+        try {
+            $result = $this->getDoctrine()->getRepository('AppBundle:Gnome')->find($id);
 
-        if ($result === null) {
+            if ($result === null) {
 
-            return new View("Gnome not found", Response::HTTP_NOT_FOUND);
+                return new View("Gnome not found", Response::HTTP_NOT_FOUND);
+            }
+
+            // convert Avatar data to base64 string
+            $avatar = $result->getAvatar();
+            if (is_resource($avatar)) {
+                $result->setAvatar(base64_encode(stream_get_contents($avatar)));
+            }
+
+            return $result;
+
+        } catch (\Exception $e) {
+            
+            return new View("Internal server error", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        // convert Avatar data to base64 string
-        $avatar = $result->getAvatar();
-        if (is_resource($avatar)) {
-            $result->setAvatar(base64_encode(stream_get_contents($avatar)));
-        }
-
-        return $result;
     }
 
     /**
@@ -126,6 +166,20 @@ class GnomeController extends FOSRestController
      * @Rest\RequestParam(name="age", requirements="^[1-9][0-9]?$|^100$", description="Gnome age")
      * @Rest\RequestParam(name="avatar", description="File: image/png")
      * @Rest\FileParam(name="avatar", requirements={"mimeTypes"="image/png"}, image=true)
+     * NOTICE: remove line with FileParam for test API without upload file
+     * 
+     * @SWG\Response(
+     *     response=200,
+     *     description="Gnome updated successfully",
+     * )
+     * @SWG\Response(
+     *     response=404,
+     *     description="Gnome not found",
+     * )
+     * @SWG\Response(
+     *     response=500,
+     *     description="Internal server error",
+     * )
      *
      * @param int $id
      * @param ParamFetcher $paramFetcher
@@ -180,23 +234,43 @@ class GnomeController extends FOSRestController
      * 
      * @Rest\Delete("/api/gnome/{id}", requirements={"id"="\d+"})
      * 
+     * @SWG\Response(
+     *     response=200,
+     *     description="Gnome deleted successfully",
+     * )
+     * @SWG\Response(
+     *     response=404,
+     *     description="Gnome not found",
+     * )
+     * @SWG\Response(
+     *     response=500,
+     *     description="Internal server error",
+     * )
+     * 
      * @param int $id
      * @return mixed
      */
     public function deleteAction(int $id) 
     {
+        try { 
+            
+            $manager = $this->getDoctrine()->getManager();
+            $gnome = $this->getDoctrine()->getRepository('AppBundle:Gnome')->find($id);
 
-        $manager = $this->getDoctrine()->getManager();
-        $gnome = $this->getDoctrine()->getRepository('AppBundle:Gnome')->find($id);
+            if (empty($gnome)) {
 
-        if (empty($gnome)) {
+                return new View("Gnome not found", Response::HTTP_NOT_FOUND);
+            } else {
 
-            return new View("Gnome not found", Response::HTTP_NOT_FOUND);
-        } else {
-            $manager->remove($gnome);
-            $manager->flush();
+                    $manager->remove($gnome);
+                    $manager->flush();
 
-            return new View("Gnome deleted successfully", Response::HTTP_OK);
+                    return new View("Gnome deleted successfully", Response::HTTP_OK);
+            }
+        
+        } catch (Exception $e) {
+                
+                return new View("Internal server error", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
