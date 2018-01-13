@@ -1,0 +1,11 @@
+/bin/
+/build/
+/vendor/
+/web/bundles/
+/var/
+!var/cache/.gitkeep
+!var/logs/.gitkeep
+!var/sessions/.gitkeep
+symfony3/composer.lock
+symfony3/phpunit.xml
+

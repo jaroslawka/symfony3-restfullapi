@@ -37,11 +37,16 @@ ADD symfony.ini /etc/php7/cli/conf.d/
 
 ADD symfony.pool.conf /etc/php7/php-fpm.d/
 
-CMD  mkdir -p /var/www/symfony3/var/ 
-CMD  chmod 777 /var/www/symfony3/var/ -R
+#CMD  mkdir -p /var/www/symfony3/var/ 
+#CMD  chmod 777 /var/www/symfony3/var/ -R
 
-CMD ["php-fpm7", "-F"]
+ADD start.sh /usr/bin/
+RUN chmod +x /usr/bin/start.sh
 
 WORKDIR /var/www/symfony3
+
+CMD /usr/bin/start.sh
+
+#CMD ["php-fpm7", "-F"]
 
 EXPOSE 9001
