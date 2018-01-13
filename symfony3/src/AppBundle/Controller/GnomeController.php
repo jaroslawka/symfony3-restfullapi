@@ -89,5 +89,32 @@ class GnomeController extends FOSRestController
             return new View("Internal server error", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+    
+    /**
+     * Read Gnome action 
+     *
+     * @Rest\Get("/api/gnome/{id}", requirements={"id"="\d+"})    
+     * 
+     * @param int $id
+     * @return mixed
+     */
+    public function getAction(int $id) {
+
+        $result = $this->getDoctrine()->getRepository('AppBundle:Gnome')->find($id);
+
+        if ($result === null) {
+
+            return new View("Gnome not found", Response::HTTP_NOT_FOUND);
+        }
+        
+        // convert Avatar data to base64 string
+        $avatar = $result->getAvatar();
+        if(is_resource($avatar)){
+            $result->setAvatar(base64_encode(stream_get_contents($avatar)));
+        }
+        
+        return $result;
+    }
 
 }
+
