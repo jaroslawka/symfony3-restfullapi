@@ -174,5 +174,30 @@ class GnomeController extends FOSRestController
             return new View("Internal server error", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+    
+     /**
+     * Gnome delete action
+     * 
+     * @Rest\Delete("/api/gnome/{id}", requirements={"id"="\d+"})
+     * 
+     * @param int $id
+     * @return mixed
+     */
+    public function deleteAction(int $id) 
+    {
+
+        $manager = $this->getDoctrine()->getManager();
+        $gnome = $this->getDoctrine()->getRepository('AppBundle:Gnome')->find($id);
+
+        if (empty($gnome)) {
+
+            return new View("Gnome not found", Response::HTTP_NOT_FOUND);
+        } else {
+            $manager->remove($gnome);
+            $manager->flush();
+
+            return new View("Gnome deleted successfully", Response::HTTP_OK);
+        }
+    }
 
 }
